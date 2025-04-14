@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "546865384225",
+    "project_id": "koncertjegyshop",
+    "storage_bucket": "koncertjegyshop.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:546865384225:android:2439998f7d78db8f1d8c60",
+        "android_client_info": {
+          "package_name": "com.example.beadando"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDtek773fowZfIGdqZO81PowZf-4SJIz88"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
