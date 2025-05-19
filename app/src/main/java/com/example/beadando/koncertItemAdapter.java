@@ -11,14 +11,21 @@ import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 public class koncertItemAdapter extends RecyclerView.Adapter<koncertItemAdapter.ViewHolder> implements Filterable {
     private ArrayList<koncertItem> mKoncertItemData;
@@ -110,7 +117,56 @@ public class koncertItemAdapter extends RecyclerView.Adapter<koncertItemAdapter.
                 @Override
                 public void onClick(View v) {
                     Log.d("Activity", "buy button clicked");
-                    ((KoncerjegyVasarlasActivity)mContext).updateAlertIcon();
+                    int position = getAdapterPosition();
+                    if (position != RecyclerView.NO_POSITION) {
+                        koncertItem selectedItem = mKoncertItemData.get(position);
+
+                        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+                        if (currentUser != null) {
+                            FirebaseFirestore db = FirebaseFirestore.getInstance();
+                            String koncertAzonosito = selectedItem.getName(); // vagy name + date, ha több azonos nevű koncert van
+                            DocumentReference itemRef = db.collection("Cart")
+                                    .document(currentUser.getUid())
+                                    .collection("Items")
+                                    .document(koncertAzonosito);
+
+                            itemRef.get().addOnSuccessListener(documentSnapshot -> {
+                                if (documentSnapshot.exists()) {
+                                    // Már benne van: növeljük a mennyiséget
+                                    Long currentQty = documentSnapshot.getLong("quantity");
+                                    if (currentQty == null) currentQty = 1L;
+                                    itemRef.update("quantity", currentQty + 1)
+                                            .addOnSuccessListener(aVoid -> {
+                                                Toast.makeText(mContext, "Mennyiség növelve!", Toast.LENGTH_SHORT).show();
+                                                if (mContext instanceof KoncerjegyVasarlasActivity) {
+                                                    ((KoncerjegyVasarlasActivity) mContext).updateAlertIcon();
+                                                }
+                                            });
+                                } else {
+                                    // Újként tesszük be quantity = 1
+                                    Map<String, Object> cartItem = new HashMap<>();
+                                    cartItem.put("name", selectedItem.getName());
+                                    cartItem.put("price", selectedItem.getPrice());
+                                    cartItem.put("helyszin", selectedItem.getHelyszin());
+                                    cartItem.put("date", selectedItem.getDate());
+                                    cartItem.put("quantity", 1);
+
+                                    itemRef.set(cartItem)
+                                            .addOnSuccessListener(aVoid -> {
+                                                Toast.makeText(mContext, "Hozzáadva a kosárhoz!", Toast.LENGTH_SHORT).show();
+                                                if (mContext instanceof KoncerjegyVasarlasActivity) {
+                                                    ((KoncerjegyVasarlasActivity) mContext).updateAlertIcon();
+                                                }
+                                            });
+                                }
+                            }).addOnFailureListener(e -> {
+                                Toast.makeText(mContext, "Hiba történt!", Toast.LENGTH_SHORT).show();
+                            });
+
+                        } else {
+                            Toast.makeText(mContext, "Nem vagy bejelentkezve!", Toast.LENGTH_SHORT).show();
+                        }
+                    }
 
                 }
             });

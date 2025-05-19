@@ -1,7 +1,10 @@
 package com.example.beadando;
 
 import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.TypedArray;
 import android.os.Bundle;
 import android.util.Log;
@@ -24,8 +27,15 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.ktx.Firebase;
 
 import java.util.ArrayList;
@@ -38,14 +48,22 @@ public class KoncerjegyVasarlasActivity extends AppCompatActivity {
     private ArrayList<koncertItem> mItemList;
     private koncertItemAdapter mAdapter;
     private int gridNumber=1;
+    private int queryLimit=8;
 
     private FrameLayout redCircle;
     private TextView contentTextView;
     private int cartItems=0;
 
+    private FirebaseFirestore mFirestore;
+    private CollectionReference mItems;
+    private boolean isLoggingOut=false;
+
+
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        FirebaseApp.initializeApp(this);
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_koncerjegy_vasarlas);
@@ -62,7 +80,6 @@ public class KoncerjegyVasarlasActivity extends AppCompatActivity {
             Log.d(LOG_TAG, "Unauthenticated user");
             finish();
         }
-
         mRecyclerView= findViewById(R.id.concertRecyclerView);
         mRecyclerView.setLayoutManager(new GridLayoutManager(this, gridNumber));
 
@@ -71,11 +88,57 @@ public class KoncerjegyVasarlasActivity extends AppCompatActivity {
         mAdapter=new koncertItemAdapter(this, mItemList);
         mRecyclerView.setAdapter(mAdapter);
 
-        initializeData();
 
+        mFirestore= FirebaseFirestore.getInstance();
+        mItems= mFirestore.collection("Items");
+
+        queryData();
+
+
+        IntentFilter filter=new IntentFilter();
+        filter.addAction(Intent.ACTION_POWER_CONNECTED);
+        filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
+        this.registerReceiver(powerReceiver,filter);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+    }
+
+    BroadcastReceiver powerReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+
+            if (action==null){
+                return;
+            }
+
+            switch (action){
+                case Intent.ACTION_POWER_CONNECTED:
+                    queryLimit=8;
+                    break;
+                case Intent.ACTION_POWER_DISCONNECTED:
+                    queryLimit=4;
+                    break;
+            }
+            queryData();
+        }
+    };
+    private void queryData(){
+        mItemList.clear();
+
+        mItems.orderBy("name", Query.Direction.ASCENDING).limit(queryLimit).get().addOnSuccessListener(queryDocumentSnapshots -> {
+            for (QueryDocumentSnapshot document : queryDocumentSnapshots){
+                koncertItem item= document.toObject(koncertItem.class);
+                mItemList.add(item);
+            }
+            if (mItemList.size()==0){
+                initializeData();
+                queryData();
+            }
+
+            mAdapter.notifyDataSetChanged();
+        });
     }
 
     private void initializeData() {
@@ -85,14 +148,17 @@ public class KoncerjegyVasarlasActivity extends AppCompatActivity {
         String[] ItemsDate= getResources().getStringArray(R.array.concert_dates);
         TypedArray itemsImageResource=getResources().obtainTypedArray(R.array.concert_images);
 
-        mItemList.clear();
-
         for (int i = 0; i < ItemsList.length; i++) {
-            mItemList.add(new koncertItem(ItemsDate[i], ItemsHelyszin[i], ItemsList[i], ItemsPrice[i], itemsImageResource.getResourceId(i, 0)));
+            mItems.add(new koncertItem(
+                    ItemsDate[i],
+                    ItemsHelyszin[i],
+                    ItemsList[i],
+                    ItemsPrice[i],
+                    itemsImageResource.getResourceId(i, 0)));
+
             
         }
         itemsImageResource.recycle();
-        mAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -127,16 +193,23 @@ public class KoncerjegyVasarlasActivity extends AppCompatActivity {
 
         if (id == R.id.log_out) {
             Log.d(LOG_TAG, "log out clicked");
-            FirebaseAuth.getInstance().signOut();
-            Intent intent = new Intent(this, MainActivity.class);
-            startActivity(intent);
-            finish();
+            isLoggingOut = true;
+            deleteCartContents(() -> {
+                FirebaseAuth.getInstance().signOut();
+                Intent intent = new Intent(this, MainActivity.class);
+                startActivity(intent);
+                finish();
+            });
             return true;
         } else if (id == R.id.setting) {
             Log.d(LOG_TAG, "settings clicked");
             return true;
         }else if (id == R.id.cart) {
             Log.d(LOG_TAG, "cart clicked");
+            Intent intent = new Intent(this, CartActivity.class);
+
+
+            startActivity(intent);
             return true;
         } else {
             return super.onOptionsItemSelected(item);
@@ -170,4 +243,36 @@ public class KoncerjegyVasarlasActivity extends AppCompatActivity {
             Log.w(LOG_TAG, "contentTextView is null when updating cart icon!");
         }
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(powerReceiver);
+    }
+    private void deleteCartContents(Runnable onComplete) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+
+        if (currentUser == null) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        db.collection("Cart")
+                .document(currentUser.getUid())
+                .collection("Items")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        doc.getReference().delete();
+                    }
+                    Log.d(LOG_TAG, "Kosár tartalma törölve.");
+                    if (onComplete != null) onComplete.run();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(LOG_TAG, "Hiba történt a kosár törlésekor: " + e.getMessage());
+                    if (onComplete != null) onComplete.run();
+                });
+    }
+
 }

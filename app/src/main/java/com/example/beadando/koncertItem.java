@@ -5,7 +5,8 @@ public class koncertItem {
     private String price;
     private String helyszin;
     private String date;
-    private final int imgResource;
+    private int imgResource;
+    public koncertItem() {}
 
     public koncertItem(String date, String helyszin, String name, String price, int imgResource) {
         this.date = date;

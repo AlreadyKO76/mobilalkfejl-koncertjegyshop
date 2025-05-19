@@ -23,6 +23,9 @@
         <item>Byealex és a slepp</item>
         <item>BSW</item>
         <item>Wellhello</item>
+        <item>Timmy Trumper</item>
+        <item>Alan Walker</item>
+        <item>Azahriah</item>
     </string-array>
 
     <string-array name="concert_prices">
@@ -31,6 +34,9 @@
         <item>6.500 Ft</item>
         <item>9.500 Ft</item>
         <item>7.000 Ft</item>
+        <item>14.500 Ft</item>
+        <item>12.500 Ft</item>
+        <item>9.000 Ft</item>
     </string-array>
 
     <string-array name="concert_locations">
@@ -39,6 +45,10 @@
         <item>Müpa Budapest</item>
         <item>Budapest Sportaréna</item>
         <item>Liszt Ferenc Koncertközpont</item>
+        <item>Budapest Kongresszusi Központ</item>
+        <item>BMC – Budapest Music Center</item>
+        <item>Margitszigeti Szabadtéri Színpad</item>
+
     </string-array>
 
     <string-array name="concert_dates">
@@ -47,6 +57,9 @@
         <item>2025.07.10.</item>
         <item>2025.10.05.</item>
         <item>2025.11.18.</item>
+        <item>2025.06.15.</item>
+        <item>2025.07.03.</item>
+        <item>2025.08.21.</item>
     </string-array>
 
     <array name="concert_images">
@@ -55,5 +68,8 @@
         <item>@drawable/byealexesaslepp</item>
         <item>@drawable/bsw</item>
         <item>@drawable/wellhello</item>
+        <item>@drawable/timmy</item>
+        <item>@drawable/alan</item>
+        <item>@drawable/azahriah</item>
     </array>
 </resources>
