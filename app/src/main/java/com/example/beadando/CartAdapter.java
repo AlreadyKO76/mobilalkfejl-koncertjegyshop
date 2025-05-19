@@ -4,6 +4,8 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -65,13 +67,18 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
             }
         });
         holder.plusButton.setOnClickListener(v -> {
+            Animation bounce = AnimationUtils.loadAnimation(context, R.anim.bounce_card);
+            holder.itemView.startAnimation(bounce);
             int newQuantity = item.getQuantity() + 1;
             updateQuantity(item, newQuantity, holder);
         });
 
         holder.minusButton.setOnClickListener(v -> {
+
             int newQuantity = item.getQuantity() - 1;
             if (newQuantity > 0) {
+                Animation bounce = AnimationUtils.loadAnimation(context, R.anim.bounce_card);
+                holder.itemView.startAnimation(bounce);
                 updateQuantity(item, newQuantity, holder);
             } else {
                 Toast.makeText(context, "A mennyiség nem lehet 0", Toast.LENGTH_SHORT).show();

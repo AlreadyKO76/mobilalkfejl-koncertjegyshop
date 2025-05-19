@@ -2,6 +2,8 @@ package com.example.beadando;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,6 +24,7 @@ public class CartActivity extends AppCompatActivity {
     private ArrayList<CartItem> cartList;
     private FirebaseFirestore db;
     private FirebaseUser currentUser;
+    Button vissza;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +41,7 @@ public class CartActivity extends AppCompatActivity {
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
         db = FirebaseFirestore.getInstance();
 
+        vissza=findViewById(R.id.backButton);
 
     }
 
@@ -71,7 +75,9 @@ public class CartActivity extends AppCompatActivity {
             finish();
         }
     }
-
+    public void back(View view){
+        finish();
+    }
 
 }
 
