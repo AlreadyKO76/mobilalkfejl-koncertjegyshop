@@ -110,6 +110,7 @@ public class koncertItemAdapter extends RecyclerView.Adapter<koncertItemAdapter.
                 @Override
                 public void onClick(View v) {
                     Log.d("Activity", "buy button clicked");
+                    ((KoncerjegyVasarlasActivity)mContext).updateAlertIcon();
 
                 }
             });

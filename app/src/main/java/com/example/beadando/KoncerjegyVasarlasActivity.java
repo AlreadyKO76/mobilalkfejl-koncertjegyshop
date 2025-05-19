@@ -1,12 +1,18 @@
 package com.example.beadando;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.res.TypedArray;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.SearchView;
+import android.widget.TextView;
+
+import androidx.appcompat.widget.Toolbar;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -32,6 +38,10 @@ public class KoncerjegyVasarlasActivity extends AppCompatActivity {
     private ArrayList<koncertItem> mItemList;
     private koncertItemAdapter mAdapter;
     private int gridNumber=1;
+
+    private FrameLayout redCircle;
+    private TextView contentTextView;
+    private int cartItems=0;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -62,6 +72,10 @@ public class KoncerjegyVasarlasActivity extends AppCompatActivity {
         mRecyclerView.setAdapter(mAdapter);
 
         initializeData();
+
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
     }
 
     private void initializeData() {
@@ -98,6 +112,12 @@ public class KoncerjegyVasarlasActivity extends AppCompatActivity {
                 return false;
             }
         });
+        MenuItem cartItem = menu.findItem(R.id.cart);
+        View actionView = MenuItemCompat.getActionView(cartItem);
+        redCircle = actionView.findViewById(R.id.view_alert_red_circle);
+        contentTextView = actionView.findViewById(R.id.view_alert_count_textview);
+
+        actionView.setOnClickListener(v -> onOptionsItemSelected(cartItem));
         return true;
     }
 
@@ -108,10 +128,15 @@ public class KoncerjegyVasarlasActivity extends AppCompatActivity {
         if (id == R.id.log_out) {
             Log.d(LOG_TAG, "log out clicked");
             FirebaseAuth.getInstance().signOut();
+            Intent intent = new Intent(this, MainActivity.class);
+            startActivity(intent);
             finish();
             return true;
         } else if (id == R.id.setting) {
             Log.d(LOG_TAG, "settings clicked");
+            return true;
+        }else if (id == R.id.cart) {
+            Log.d(LOG_TAG, "cart clicked");
             return true;
         } else {
             return super.onOptionsItemSelected(item);
@@ -120,8 +145,29 @@ public class KoncerjegyVasarlasActivity extends AppCompatActivity {
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
+        final MenuItem alertMenuItem = menu.findItem(R.id.cart);
+        FrameLayout rootView=(FrameLayout) alertMenuItem.getActionView();
 
+        redCircle =(FrameLayout) rootView.findViewById(R.id.view_alert_red_circle);
+        contentTextView = (TextView) rootView.findViewById(R.id.view_alert_count_textview);
+
+        rootView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onOptionsItemSelected(alertMenuItem);
+            }
+        });
 
         return super.onPrepareOptionsMenu(menu);
+    }
+
+    public void updateAlertIcon(){
+        cartItems=(cartItems+1);
+        if (contentTextView != null){
+            contentTextView.setText(String.valueOf(cartItems));
+            redCircle.setVisibility(View.VISIBLE);
+        }else {
+            Log.w(LOG_TAG, "contentTextView is null when updating cart icon!");
+        }
     }
 }
